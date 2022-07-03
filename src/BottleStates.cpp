@@ -3,6 +3,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include "BottleStates.h"
 
 /*--[ Types ]--------------------------------------------------------------------------------------------------------------------*/
@@ -50,10 +51,16 @@ void Debounce();
 /*--[ Data ]---------------------------------------------------------------------------------------------------------------------*/
 unsigned long aCurrentBottleFillingTime;
 unsigned long aBottleFillingTime;
+unsigned long aBottleFillingComplete;
 DebounceNavigate aDebounce;
 FillerStates aCurrentState;
 FillerStates aPreviousState;
-PinDebounce aButtonDebounce[MAX_BOTTLE_BUTTONS];
+PinDebounce aButtonDebounce[MAX_BOTTLE_BUTTONS] =
+{
+  { button : BOTTLE_IN_PIN_STOP, buttonState : false,  currentButtonState : false, debounceTime : 20},
+  { button : BOTTLE_IN_PIN_MODE, buttonState : false,  currentButtonState : false, debounceTime : 20},
+  { button : BOTTLE_IN_PIN_FILL, buttonState : false,  currentButtonState : false, debounceTime : 20},
+};
 StateFunctionHandler aBottleState[maxFillerStates] = 
   {
     FillerIdle,
@@ -65,10 +72,20 @@ StateFunctionHandler aBottleState[maxFillerStates] =
     Debounce
   };
 
+static Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void FillerIdle()
 {
+  if (aCurrentState != aPreviousState)
+  {
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Idle"));
+    display.display();
+  }
+
   if (aButtonDebounce[BOTTLE_IN_MODE].buttonState == true)
   {
     aDebounce.goOn = modeFillBottle;
@@ -89,13 +106,17 @@ void FillerFLow()
 {
   if (aCurrentState != aPreviousState)
   {
-    analogWrite(BOTTLE_OUT_PWM, BOTTLE_FILL_SPEED);
+    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Free-FLow"));
+    display.display();
     aPreviousState = aCurrentState;
   }
 
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
   {
-    analogWrite(BOTTLE_OUT_PWM, BOTTLE_STOP_SPEED);
+    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     aDebounce.goOn = fillerIdle;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
@@ -108,13 +129,23 @@ void FillBottle()
   if (aCurrentState != aPreviousState)
   {
     aCurrentBottleFillingTime = millis();
-    analogWrite(BOTTLE_OUT_PWM, BOTTLE_FILL_SPEED);
+    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     aPreviousState = aCurrentState;
   }
+  aBottleFillingComplete = millis() - aCurrentBottleFillingTime;
+  float progress = (aBottleFillingComplete *100) / aBottleFillingTime;
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println(F("Filling !"));
+  display.setCursor(20, 30);
+  display.print(progress, 0);
+  display.println(" %");
+  display.display();
 
-  if (millis() - aCurrentBottleFillingTime > aBottleFillingTime)
+
+  if (aBottleFillingComplete > aBottleFillingTime)
   {
-    analogWrite(BOTTLE_OUT_PWM, BOTTLE_STOP_SPEED);
+    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     aCurrentState = modeFillBottle;
   }
 }
@@ -122,6 +153,15 @@ void FillBottle()
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void ModeFillBottle()
 {
+  if (aCurrentState != aPreviousState)
+  {
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Mode->Fill"));
+    display.display();
+    aPreviousState = aCurrentState;
+  }
+
   if (aButtonDebounce[BOTTLE_IN_MODE].buttonState == true)
   {
     aDebounce.goOn = modeFillProgram;
@@ -147,6 +187,15 @@ void ModeFillBottle()
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void ModeFillProgram()
 {
+  if (aCurrentState != aPreviousState)
+  {
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Mode->Prog"));
+    display.display();
+    aPreviousState = aCurrentState;
+  }
+
   if (aButtonDebounce[BOTTLE_IN_MODE].buttonState == true)
   {
     aDebounce.goOn = modeFillBottle;
@@ -175,13 +224,17 @@ void ProgramBottle()
   if (aCurrentState != aPreviousState)
   {
     aCurrentBottleFillingTime = millis();
-    analogWrite(BOTTLE_OUT_PWM, BOTTLE_FILL_SPEED);
+    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Program Fill"));
+    display.display();
     aPreviousState = aCurrentState;
   }
   
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
   {
-    analogWrite(BOTTLE_OUT_PWM, BOTTLE_STOP_SPEED);
+    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     aBottleFillingTime = millis() - aCurrentBottleFillingTime;
     aDebounce.goOn = modeFillProgram;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
@@ -202,9 +255,10 @@ void Debounce()
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void BottleStatesInitialise()
 {
-  pinMode(BOTTLE_IN_STOP, INPUT_PULLUP);
-  pinMode(BOTTLE_IN_MODE, INPUT_PULLUP);
-  pinMode(BOTTLE_IN_FILL, INPUT_PULLUP);
+  for (uint8_t i = 0; i< MAX_BOTTLE_BUTTONS; i++)
+  {
+    pinMode(aButtonDebounce[i].button, INPUT_PULLUP);
+  }
 
   aCurrentState = fillerIdle;
   aPreviousState = debounce;
@@ -214,7 +268,24 @@ void BottleStatesInitialise()
   // Pins D5 and D6 are 62.5kHz
   //TCCR0B = 0b00000001; // x1
   //TCCR0A = 0b00000011; // fast pwm
-  pinMode(BOTTLE_OUT_PWM, OUTPUT);
+  pinMode(BOTTLE_OUT_PIN_PWM, OUTPUT);
+
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  { // Address 0x3D for 128x64
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  // Clear the buffer
+  display.clearDisplay();
+  display.setTextSize(2); // Draw 2X-scale text
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println(F("Bottle Fill"));
+  display.display();      // Show initial text
+  delay(1000);
+  display.clearDisplay();
+  display.display();      // Show initial text
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
@@ -231,7 +302,7 @@ void BottleStatesExecute()
 void CheckButtonPress(PinDebounce *fPinIn)
 {
   // read the state of the switch into a local variable:
-  bool value = digitalRead(fPinIn->button) ? true : false;
+  bool value = digitalRead(fPinIn->button) ? false : true;
 
   // check to see if you just pressed the button
   // (i.e. the input went from LOW to HIGH), and you've waited long enough
