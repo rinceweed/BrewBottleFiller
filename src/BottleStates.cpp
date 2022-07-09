@@ -5,6 +5,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "BottleStates.h"
+#include "BottleTimer.h"
 
 /*--[ Types ]--------------------------------------------------------------------------------------------------------------------*/
 typedef enum FillerStateList
@@ -18,7 +19,6 @@ typedef enum FillerStateList
   debounce,
   maxFillerStates
 } FillerStates;
-
 
 typedef struct PinDebouncing
 {
@@ -49,7 +49,7 @@ void ProgramBottle();
 void Debounce();
 
 /*--[ Data ]---------------------------------------------------------------------------------------------------------------------*/
-unsigned long aCurrentBottleFillingTime;
+float aCurrentProgress;
 unsigned long aBottleFillingTime;
 unsigned long aBottleFillingComplete;
 DebounceNavigate aDebounce;
@@ -73,7 +73,6 @@ StateFunctionHandler aBottleState[maxFillerStates] =
   };
 
 static Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void FillerIdle()
@@ -106,7 +105,7 @@ void FillerFLow()
 {
   if (aCurrentState != aPreviousState)
   {
-    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     display.clearDisplay();
     display.setCursor(0, 0);
     display.println(F("Free-FLow"));
@@ -116,7 +115,7 @@ void FillerFLow()
 
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
   {
-    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     aDebounce.goOn = fillerIdle;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
@@ -128,25 +127,37 @@ void FillBottle()
 {
   if (aCurrentState != aPreviousState)
   {
-    aCurrentBottleFillingTime = millis();
-    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
+    StartCount(BOTTLETIME_FILL);
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
+    aCurrentProgress = 0;
     aPreviousState = aCurrentState;
   }
-  aBottleFillingComplete = millis() - aCurrentBottleFillingTime;
-  float progress = (aBottleFillingComplete *100) / aBottleFillingTime;
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println(F("Filling !"));
-  display.setCursor(20, 30);
-  display.print(progress, 0);
-  display.println(" %");
-  display.display();
 
+  aBottleFillingComplete = WhatIsCount(BOTTLETIME_FILL);
+  float progress = (aBottleFillingComplete * 100) / aBottleFillingTime;
+  if (aCurrentProgress != progress)
+  {
+    aCurrentProgress = progress;
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Filling !"));
+    display.setCursor(20, 30);
+    display.print(progress, 0);
+    display.println(" %");
+    display.display();
+  }
 
   if (aBottleFillingComplete > aBottleFillingTime)
   {
-    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     aCurrentState = modeFillBottle;
+  }
+
+  if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
+  {
+    aDebounce.goOn = fillerIdle;
+    aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
+    aCurrentState = debounce;
   }
 }
 
@@ -223,11 +234,13 @@ void ProgramBottle()
 {
   if (aCurrentState != aPreviousState)
   {
-    aCurrentBottleFillingTime = millis();
-    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
+    StartCount(BOTTLETIME_FILL);
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     display.clearDisplay();
     display.setCursor(0, 0);
-    display.println(F("Program Fill"));
+    display.println(F("Program ->"));
+    display.println(F("Filling"));
+    display.println(F("Bottle"));
     display.display();
     aPreviousState = aCurrentState;
   }
@@ -235,7 +248,8 @@ void ProgramBottle()
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
   {
     analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
-    aBottleFillingTime = millis() - aCurrentBottleFillingTime;
+    // Roll-Over not taken into account
+    aBottleFillingTime = WhatIsCount(BOTTLETIME_FILL);
     aDebounce.goOn = modeFillProgram;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
@@ -260,15 +274,14 @@ void BottleStatesInitialise()
     pinMode(aButtonDebounce[i].button, INPUT_PULLUP);
   }
 
+  pinMode(BOTTLE_OUT_PIN_PWM, OUTPUT);
+  ConfigureTimer(BOTTLETIME_FILL, 1);
+  ConfigureTimer(BOTTLETIME_KEYPRESS, 0.01);
+
   aCurrentState = fillerIdle;
   aPreviousState = debounce;
 
-  aBottleFillingTime = 0;
-
-  // Pins D5 and D6 are 62.5kHz
-  //TCCR0B = 0b00000001; // x1
-  //TCCR0A = 0b00000011; // fast pwm
-  pinMode(BOTTLE_OUT_PIN_PWM, OUTPUT);
+  aBottleFillingTime = 302; //301500 ms
 
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
   { // Address 0x3D for 128x64
@@ -281,7 +294,8 @@ void BottleStatesInitialise()
   display.setTextSize(2); // Draw 2X-scale text
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
-  display.println(F("Bottle Fill"));
+  display.println(F("  Bottle"));
+  display.println(F("   Fill"));
   display.display();      // Show initial text
   delay(1000);
   display.clearDisplay();
@@ -303,7 +317,6 @@ void CheckButtonPress(PinDebounce *fPinIn)
 {
   // read the state of the switch into a local variable:
   bool value = digitalRead(fPinIn->button) ? false : true;
-
   // check to see if you just pressed the button
   // (i.e. the input went from LOW to HIGH), and you've waited long enough
   // since the last press to ignore any noise:
@@ -312,11 +325,22 @@ void CheckButtonPress(PinDebounce *fPinIn)
   if (value != fPinIn->currentButtonState)
   {
     // reset the debouncing timer
-    fPinIn->debounceTime = millis();
+    fPinIn->debounceTime = WhatIsCount(BOTTLETIME_KEYPRESS);
     fPinIn->currentButtonState = value;
   }
 
-  if ((millis() - fPinIn->debounceTime) > BOTTLE_IN_DEBOUNCE_TIME)
+  unsigned long current_time = WhatIsCount(BOTTLETIME_KEYPRESS);
+  unsigned long high_time = current_time;
+  unsigned long low_time = fPinIn->debounceTime;
+  if (current_time < fPinIn->debounceTime)
+  {
+    low_time = current_time;
+    high_time = fPinIn->debounceTime + (fPinIn->debounceTime - current_time);
+  }
+
+  unsigned long debounce_time = high_time - low_time;
+
+  if (debounce_time > BOTTLE_IN_DEBOUNCE_TIME)
   {
     // whatever the reading is at, it's been there for longer than the debounce
     // delay, so take it as the actual current state:

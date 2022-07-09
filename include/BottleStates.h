@@ -11,7 +11,7 @@
 
 #define  BOTTLE_OUT_PIN_PWM           5
 #define  BOTTLE_IN_DEBOUNCE_TIME      20
-#define  BOTTLE_FILL_SPEED            250
+#define  BOTTLE_FILL_SPEED            1
 #define  BOTTLE_STOP_SPEED            0
 #define  BOTTLE_IN_PIN_STOP           7
 #define  BOTTLE_IN_PIN_MODE           8
