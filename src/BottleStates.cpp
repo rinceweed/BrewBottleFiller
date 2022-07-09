@@ -130,6 +130,13 @@ void FillBottle()
     StartCount(BOTTLETIME_FILL);
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     aCurrentProgress = 0;
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Filling !"));
+    display.setCursor(20, 30);
+    display.print(0, 0);
+    display.println(" %");
+    display.display();
     aPreviousState = aCurrentState;
   }
 
@@ -247,7 +254,7 @@ void ProgramBottle()
   
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
   {
-    analogWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     // Roll-Over not taken into account
     aBottleFillingTime = WhatIsCount(BOTTLETIME_FILL);
     aDebounce.goOn = modeFillProgram;
@@ -305,7 +312,7 @@ void BottleStatesInitialise()
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void BottleStatesExecute()
 {
-  for (uint8_t i = 0; i< MAX_BOTTLE_BUTTONS; i++)
+  for (uint8_t i = 0; i < MAX_BOTTLE_BUTTONS; i++)
   {
     CheckButtonPress(&(aButtonDebounce[i]));
   }
