@@ -72,19 +72,23 @@ StateFunctionHandler aBottleState[maxFillerStates] =
     Debounce
   };
 
-static Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+static Adafruit_SSD1306 aOledDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void FillerIdle()
 {
+  // Entry action
   if (aCurrentState != aPreviousState)
   {
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(F("Idle"));
-    display.display();
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Idle"));
+    aOledDisplay.display();
   }
 
+  // Continious action
+
+  // Rules action
   if (aButtonDebounce[BOTTLE_IN_MODE].buttonState == true)
   {
     aDebounce.goOn = modeFillBottle;
@@ -98,65 +102,78 @@ void FillerIdle()
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_FILL]);
     aCurrentState = debounce;
   }
+
+  // Exit action
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void FillerFLow()
 {
+  // Entry action
   if (aCurrentState != aPreviousState)
   {
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(F("Free-FLow"));
-    display.display();
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Free-FLow"));
+    aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
 
+  // Continious action
+
+  // Rules action
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
   {
-    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     aDebounce.goOn = fillerIdle;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
+  }
+
+  // Exit action
+  if (aCurrentState != aPreviousState)
+  {
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
   }
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void FillBottle()
 {
+  // Entry action
   if (aCurrentState != aPreviousState)
   {
     StartCount(BOTTLETIME_FILL);
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     aCurrentProgress = 0;
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(F("Filling !"));
-    display.setCursor(20, 30);
-    display.print(0, 0);
-    display.println(" %");
-    display.display();
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Filling !"));
+    aOledDisplay.setCursor(20, 30);
+    aOledDisplay.print(0, 0);
+    aOledDisplay.println(" %");
+    aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
 
+  // Continious action
   aBottleFillingComplete = WhatIsCount(BOTTLETIME_FILL);
   float progress = (aBottleFillingComplete * 100) / aBottleFillingTime;
   if (aCurrentProgress != progress)
   {
     aCurrentProgress = progress;
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(F("Filling !"));
-    display.setCursor(20, 30);
-    display.print(progress, 0);
-    display.println(" %");
-    display.display();
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Filling !"));
+    aOledDisplay.setCursor(20, 30);
+    aOledDisplay.print(progress, 0);
+    aOledDisplay.println(" %");
+    aOledDisplay.display();
   }
 
+  // Rules action
   if (aBottleFillingComplete > aBottleFillingTime)
   {
-    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     aCurrentState = modeFillBottle;
   }
 
@@ -166,20 +183,30 @@ void FillBottle()
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
   }
+
+  // Exit action
+  if (aCurrentState != aPreviousState)
+  {
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
+  }
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void ModeFillBottle()
 {
+  // Entry action
   if (aCurrentState != aPreviousState)
   {
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(F("Mode->Fill"));
-    display.display();
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Mode->Fill"));
+    aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
 
+  // Continious action
+
+  // Rules action
   if (aButtonDebounce[BOTTLE_IN_MODE].buttonState == true)
   {
     aDebounce.goOn = modeFillProgram;
@@ -200,20 +227,26 @@ void ModeFillBottle()
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
   }
+
+  // Exit action
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void ModeFillProgram()
 {
+  // Entry action
   if (aCurrentState != aPreviousState)
   {
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(F("Mode->Prog"));
-    display.display();
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Mode->Prog"));
+    aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
 
+  // Continious action
+
+  // Rules action
   if (aButtonDebounce[BOTTLE_IN_MODE].buttonState == true)
   {
     aDebounce.goOn = modeFillBottle;
@@ -234,32 +267,43 @@ void ModeFillProgram()
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
   }
+
+  // Exit action
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void ProgramBottle()
 {
+  // Entry action
   if (aCurrentState != aPreviousState)
   {
     StartCount(BOTTLETIME_FILL);
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(F("Program ->"));
-    display.println(F("Filling"));
-    display.println(F("Bottle"));
-    display.display();
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Program ->"));
+    aOledDisplay.println(F("Filling"));
+    aOledDisplay.println(F("Bottle"));
+    aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
   
+  // Continious action
+
+  // Rules action
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
   {
-    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     // Roll-Over not taken into account
     aBottleFillingTime = WhatIsCount(BOTTLETIME_FILL);
     aDebounce.goOn = modeFillProgram;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
+  }
+
+  // Exit action
+  if (aCurrentState != aPreviousState)
+  {
+    digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
   }
 }
 
@@ -290,23 +334,23 @@ void BottleStatesInitialise()
 
   aBottleFillingTime = 302; //301500 ms
 
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  if(!aOledDisplay.begin(SSD1306_SWITCHCAPVCC, 0x3C))
   { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
 
   // Clear the buffer
-  display.clearDisplay();
-  display.setTextSize(2); // Draw 2X-scale text
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println(F("  Bottle"));
-  display.println(F("   Fill"));
-  display.display();      // Show initial text
+  aOledDisplay.clearDisplay();
+  aOledDisplay.setTextSize(2); // Draw 2X-scale text
+  aOledDisplay.setTextColor(WHITE);
+  aOledDisplay.setCursor(0, 0);
+  aOledDisplay.println(F("  Bottle"));
+  aOledDisplay.println(F("   Fill"));
+  aOledDisplay.display();      // Show initial text
   delay(1000);
-  display.clearDisplay();
-  display.display();      // Show initial text
+  aOledDisplay.clearDisplay();
+  aOledDisplay.display();      // Show initial text
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
