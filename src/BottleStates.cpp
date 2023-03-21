@@ -51,7 +51,7 @@ void Debounce();
 
 /*--[ Data ]---------------------------------------------------------------------------------------------------------------------*/
 float aCurrentProgress;
-unsigned long aBottleFillingTime;
+unsigned long aBottleFillingCount;
 unsigned long aBottleFillingComplete;
 DebounceNavigate aDebounce;
 FillerStates aCurrentState;
@@ -163,7 +163,7 @@ void FillBottle()
   // Entry action
   if (aCurrentState != aPreviousState)
   {
-    StartCount(BOTTLETIME_FILL);
+    StartFlow();
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     aCurrentProgress = 0;
     aOledDisplay.clearDisplay();
@@ -171,14 +171,14 @@ void FillBottle()
     aOledDisplay.println(F("Filling !"));
     aOledDisplay.setCursor(20, 30);
     aOledDisplay.print(0, 0);
-    aOledDisplay.println(" %");
+    aOledDisplay.println("%");
     aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
 
   // Continious action
-  aBottleFillingComplete = WhatIsCount(BOTTLETIME_FILL);
-  float progress = (aBottleFillingComplete * 100) / aBottleFillingTime;
+  aBottleFillingComplete = WhatIsFlowCount();
+  float progress = (aBottleFillingComplete * 100) / aBottleFillingCount;
   if (aCurrentProgress != progress)
   {
     aCurrentProgress = progress;
@@ -187,12 +187,16 @@ void FillBottle()
     aOledDisplay.println(F("Filling !"));
     aOledDisplay.setCursor(20, 30);
     aOledDisplay.print(progress, 0);
-    aOledDisplay.println(" %");
+    aOledDisplay.println("%");
+    aOledDisplay.print(F(" "));
+    flowrate = WhatIsFlowRate();
+    aOledDisplay.print(flowrate);
+    aOledDisplay.print(F("L/min"));
     aOledDisplay.display();
   }
 
   // Rules action
-  if (aBottleFillingComplete > aBottleFillingTime)
+  if (aBottleFillingComplete > aBottleFillingCount)
   {
     aCurrentState = modeFillBottle;
   }
@@ -297,7 +301,7 @@ void ProgramBottle()
   // Entry action
   if (aCurrentState != aPreviousState)
   {
-    StartCount(BOTTLETIME_FILL);
+    StartFlow();
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     aOledDisplay.clearDisplay();
     aOledDisplay.setCursor(0, 0);
@@ -314,7 +318,7 @@ void ProgramBottle()
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
   {
     // Roll-Over not taken into account
-    aBottleFillingTime = WhatIsCount(BOTTLETIME_FILL);
+    aBottleFillingCount = WhatIsFlowCount();
     aDebounce.goOn = modeFillProgram;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
     aCurrentState = debounce;
@@ -352,7 +356,7 @@ void BottleStatesInitialise()
   aCurrentState = fillerIdle;
   aPreviousState = debounce;
 
-  aBottleFillingTime = 302; //301500 ms
+  aBottleFillingCount = 2528; // counts for 430ml: 1lit=5880
 
   if(!aOledDisplay.begin(SSD1306_SWITCHCAPVCC, 0x3C))
   { // Address 0x3D for 128x64
