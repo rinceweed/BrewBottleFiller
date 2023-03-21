@@ -14,7 +14,7 @@ typedef struct BottleTiming
   unsigned long configuredCount;
 } BottleTimeCounters;
 
-static BottleTimeCounters TimerCountTers[MAX_BOTTLE_TIMERS];
+static volatile BottleTimeCounters TimerCountTers[MAX_BOTTLE_TIMERS];
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void TimerInitialise()

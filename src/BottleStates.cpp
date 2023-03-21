@@ -6,6 +6,7 @@
 #include <Adafruit_SSD1306.h>
 #include "BottleStates.h"
 #include "BottleTimer.h"
+#include "BottleFlow.h"
 
 /*--[ Types ]--------------------------------------------------------------------------------------------------------------------*/
 typedef enum FillerStateList
@@ -73,6 +74,8 @@ StateFunctionHandler aBottleState[maxFillerStates] =
   };
 
 static Adafruit_SSD1306 aOledDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+unsigned long flowcount;
+float flowrate;
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void FillerIdle()
@@ -118,9 +121,26 @@ void FillerFLow()
     aOledDisplay.println(F("Free-FLow"));
     aOledDisplay.display();
     aPreviousState = aCurrentState;
+
+    flowcount = WhatIsFlowCount();
+    StartFlow();
   }
 
   // Continious action
+  unsigned long current = WhatIsFlowCount();
+  if (flowcount != current)
+  {
+    flowcount = WhatIsFlowCount();
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Free-FLow"));
+    aOledDisplay.setCursor(20, 30);
+    aOledDisplay.print(flowcount);
+    aOledDisplay.print(F(" "));
+    flowrate = WhatIsFlowRate();
+    aOledDisplay.print(flowrate);
+    aOledDisplay.display();
+  }
 
   // Rules action
   if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
@@ -336,7 +356,7 @@ void BottleStatesInitialise()
 
   if(!aOledDisplay.begin(SSD1306_SWITCHCAPVCC, 0x3C))
   { // Address 0x3D for 128x64
-    Serial.println(F("SSD1306 allocation failed"));
+    Serial.println(F("SSD1306 allocation failed. Not starting up"));
     for(;;); // Don't proceed, loop forever
   }
 

@@ -1,24 +1,18 @@
-#ifndef BOTTLETIMER_H_
-#define BOTTLETIMER_H_
+#ifndef BOTTLEFLOW_H_
+#define BOTTLEFLOW_H_
 
 /*--[ Include Files ]------------------------------------------------------------------------------------------------------------*/
 
 /*--[ Literals ]-----------------------------------------------------------------------------------------------------------------*/
 
 /*--[ Types ]--------------------------------------------------------------------------------------------------------------------*/
-enum BottleTimers
-{
-  BOTTLETIME_KEYPRESS = 0,
-  BOTTLETIME_FILL,
-  BOTTLETIME_FLOW,
-  MAX_BOTTLE_TIMERS
-};
 
 /*--[ Prototypes ]---------------------------------------------------------------------------------------------------------------*/
-void TimerInitialise();
-void ConfigureTimer(enum BottleTimers bt, float seconds);
-void StartCount(enum BottleTimers bt);
-unsigned long WhatIsCount(enum BottleTimers bt);
+void FlowInitialise();
+void CalculateFlowRateCyclically();
+void StartFlow();
+unsigned long WhatIsFlowCount();
+float WhatIsFlowRate();
 
 /*EOF============================================================================================================================*/
 #endif
