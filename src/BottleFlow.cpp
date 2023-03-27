@@ -2,9 +2,8 @@
 #include <Arduino.h>
 #include "BottleTimer.h"
 #include "BottleFlow.h"
+#include "PinDefs.h"
 
-#define BOTTLE_FLOW_PIN              (2)
-#define BOTTLE_FLOW_INTERRUPT        (0) // 0 for pin 2
 #define BOTTLE_FLOW_PULSES_PER_LITER (5880.0)//1L = 5880 square waves
 #define BOTTLE_FLOW_TMER_MS          (100.0)
 #define BOTTLE_FLOW_TMER_PER_S       ((float)(BOTTLE_FLOW_TMER_MS / 1000.0))
@@ -21,7 +20,7 @@ void FlowInterrupt();
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
 void FlowInitialise()
 {
-  pinMode(BOTTLE_FLOW_PIN, INPUT);
+  pinMode(BOTTLE_IN_PIN_FLOW, INPUT);
   attachInterrupt(BOTTLE_FLOW_INTERRUPT, FlowInterrupt, RISING);
   ConfigureTimer(BOTTLETIME_FLOW, BOTTLE_FLOW_TMER_PER_S);
 }

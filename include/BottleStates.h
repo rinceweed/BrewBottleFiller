@@ -10,14 +10,14 @@
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 
 
-#define  BOTTLE_OUT_PIN_PWM           5
-//Depends on the configured rate setting
+// Depends on the configured rate setting
 #define  BOTTLE_IN_DEBOUNCE_TIME      3
+
 #define  BOTTLE_FILL_SPEED            1
 #define  BOTTLE_STOP_SPEED            0
-#define  BOTTLE_IN_PIN_STOP           7
-#define  BOTTLE_IN_PIN_MODE           8
-#define  BOTTLE_IN_PIN_FILL           9
+
+#define  BOTTLE_VALVE_OPEN            1
+#define  BOTTLE_VALVE_CLOSE           0
 
 /*--[ Types ]--------------------------------------------------------------------------------------------------------------------*/
 enum BottleButtons

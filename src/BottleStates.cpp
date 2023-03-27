@@ -7,6 +7,7 @@
 #include "BottleStates.h"
 #include "BottleTimer.h"
 #include "BottleFlow.h"
+#include "PinDefs.h"
 
 /*--[ Types ]--------------------------------------------------------------------------------------------------------------------*/
 typedef enum FillerStateList
@@ -115,6 +116,7 @@ void FillerFLow()
   // Entry action
   if (aCurrentState != aPreviousState)
   {
+    digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_OPEN);
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     aOledDisplay.clearDisplay();
     aOledDisplay.setCursor(0, 0);
@@ -154,6 +156,7 @@ void FillerFLow()
   if (aCurrentState != aPreviousState)
   {
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
+    digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_CLOSE);
   }
 }
 
@@ -164,6 +167,7 @@ void FillBottle()
   if (aCurrentState != aPreviousState)
   {
     StartFlow();
+    digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_OPEN);
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     aCurrentProgress = 0;
     aOledDisplay.clearDisplay();
@@ -212,7 +216,8 @@ void FillBottle()
   if (aCurrentState != aPreviousState)
   {
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
-  }
+    digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_CLOSE);
+}
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
@@ -302,6 +307,7 @@ void ProgramBottle()
   if (aCurrentState != aPreviousState)
   {
     StartFlow();
+    digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_OPEN);
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_FILL_SPEED);
     aOledDisplay.clearDisplay();
     aOledDisplay.setCursor(0, 0);
@@ -328,6 +334,7 @@ void ProgramBottle()
   if (aCurrentState != aPreviousState)
   {
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
+    digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_CLOSE);
   }
 }
 
@@ -349,7 +356,9 @@ void BottleStatesInitialise()
     pinMode(aButtonDebounce[i].button, INPUT_PULLUP);
   }
 
+  pinMode(BOTTLE_OUT_PIN_VALVE, OUTPUT);
   pinMode(BOTTLE_OUT_PIN_PWM, OUTPUT);
+
   ConfigureTimer(BOTTLETIME_FILL, 1);
   ConfigureTimer(BOTTLETIME_KEYPRESS, 0.01);
 
@@ -360,7 +369,7 @@ void BottleStatesInitialise()
 
   if(!aOledDisplay.begin(SSD1306_SWITCHCAPVCC, 0x3C))
   { // Address 0x3D for 128x64
-    Serial.println(F("SSD1306 allocation failed. Not starting up"));
+    Serial.println(F("SSD1306 allocation (0x3c) failed. Not starting up. Check address?"));
     for(;;); // Don't proceed, loop forever
   }
 
