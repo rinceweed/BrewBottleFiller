@@ -15,8 +15,10 @@ typedef enum FillerStateList
   fillerIdle,
   fillerFLow,
   fillBottle,
+  engageFlow,
   modeFillBottle,
   modeFillProgram,
+  modeEngageFlow,
   programBottle,
   debounce,
   maxFillerStates
@@ -45,8 +47,10 @@ void CheckButtonPress(PinDebounce *fPinIn);
 void FillerIdle();
 void FillerFLow();
 void FillBottle();
+void EngageFlow();
 void ModeFillBottle();
 void ModeFillProgram();
+void ModeEngageFlow();
 void ProgramBottle();
 void Debounce();
 
@@ -68,8 +72,10 @@ StateFunctionHandler aBottleState[maxFillerStates] =
     FillerIdle,
     FillerFLow,
     FillBottle,
+    EngageFlow,
     ModeFillBottle,
     ModeFillProgram,
+    ModeEngageFlow,
     ProgramBottle,
     Debounce
   };
@@ -217,7 +223,38 @@ void FillBottle()
   {
     digitalWrite(BOTTLE_OUT_PIN_PWM, BOTTLE_STOP_SPEED);
     digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_CLOSE);
+ }
 }
+
+/*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
+void EngageFlow()
+{
+  // Entry action
+  if (aCurrentState != aPreviousState)
+  {
+    digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_OPEN);
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Engaged !"));
+    aOledDisplay.display();
+    aPreviousState = aCurrentState;
+  }
+
+  // Continious action
+
+  // Rules action
+  if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
+  {
+    aDebounce.goOn = fillerIdle;
+    aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
+    aCurrentState = debounce;
+  }
+
+  // Exit action
+  if (aCurrentState != aPreviousState)
+  {
+    digitalWrite(BOTTLE_OUT_PIN_VALVE, BOTTLE_VALVE_CLOSE);
+ }
 }
 
 /*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
@@ -278,7 +315,7 @@ void ModeFillProgram()
   // Rules action
   if (aButtonDebounce[BOTTLE_IN_MODE].buttonState == true)
   {
-    aDebounce.goOn = modeFillBottle;
+    aDebounce.goOn = modeEngageFlow;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_MODE]);
     aCurrentState = debounce;
   }
@@ -286,6 +323,46 @@ void ModeFillProgram()
   if (aButtonDebounce[BOTTLE_IN_FILL].buttonState == true)
   {
     aDebounce.goOn = programBottle;
+    aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_FILL]);
+    aCurrentState = debounce;
+  }
+
+  if (aButtonDebounce[BOTTLE_IN_STOP].buttonState == true)
+  {
+    aDebounce.goOn = fillerIdle;
+    aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_STOP]);
+    aCurrentState = debounce;
+  }
+
+  // Exit action
+}
+
+/*--[ Function ]-----------------------------------------------------------------------------------------------------------------*/
+void ModeEngageFlow()
+{
+  // Entry action
+  if (aCurrentState != aPreviousState)
+  {
+    aOledDisplay.clearDisplay();
+    aOledDisplay.setCursor(0, 0);
+    aOledDisplay.println(F("Mode->Engage"));
+    aOledDisplay.display();
+    aPreviousState = aCurrentState;
+  }
+
+  // Continious action
+
+  // Rules action
+  if (aButtonDebounce[BOTTLE_IN_MODE].buttonState == true)
+  {
+    aDebounce.goOn = modeFillBottle;
+    aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_MODE]);
+    aCurrentState = debounce;
+  }
+
+  if (aButtonDebounce[BOTTLE_IN_FILL].buttonState == true)
+  {
+    aDebounce.goOn = engageFlow;
     aDebounce.pressedButton = &(aButtonDebounce[BOTTLE_IN_FILL]);
     aCurrentState = debounce;
   }
