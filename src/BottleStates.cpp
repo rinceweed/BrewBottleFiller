@@ -265,7 +265,7 @@ void ModeFillBottle()
   {
     aOledDisplay.clearDisplay();
     aOledDisplay.setCursor(0, 0);
-    aOledDisplay.println(F("Mode->Fill"));
+    aOledDisplay.println(F("M->Fill"));
     aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
@@ -305,7 +305,7 @@ void ModeFillProgram()
   {
     aOledDisplay.clearDisplay();
     aOledDisplay.setCursor(0, 0);
-    aOledDisplay.println(F("Mode->Prog"));
+    aOledDisplay.println(F("M->Program"));
     aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
@@ -345,7 +345,7 @@ void ModeEngageFlow()
   {
     aOledDisplay.clearDisplay();
     aOledDisplay.setCursor(0, 0);
-    aOledDisplay.println(F("Mode->Engage"));
+    aOledDisplay.println(F("M->Engage"));
     aOledDisplay.display();
     aPreviousState = aCurrentState;
   }
